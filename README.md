@@ -1,5 +1,5 @@
 # What is this?
-This repo provides the building blocks for implementing the Visitor design pattern in c++
+This repo provides the building blocks for implementing the Visitor design pattern in c++.
 
 # How does it work?
 The Visitor pattern implementation provided by this repository allows the user to 
