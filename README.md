@@ -44,3 +44,11 @@ int main()
 }
 
 ```
+## Full example:
+The idea of this library is to require the base class user to be aware of any concrete visitable classes only when visitation is used on the base class. 
+That's achieved with allowing forward-declarations of the classes used for specifying the visitable structure. 
+
+In other words, if the base class user does not use the visitor capabilities, he/she does not need to have any physical dependency towards the visitation details, apart from forward-declarations. This protects the client translation unit from unnecessary recompilation.
+
+Given the following class hierarchy: 
+   
