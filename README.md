@@ -46,5 +46,132 @@ That's achieved with allowing forward-declarations of the classes used for speci
 
 In other words, if the base class user does not use the visitor capabilities, he/she does not need to have any physical dependency towards the visitation details, apart from forward-declarations. This protects the client translation unit from unnecessary recompilation.
 
-Given the following class hierarchy: 
-   
+Note in the following example:
+- ```base.hpp``` forward-declares ```BaseChildren```, so the ```Base``` users opt-in for the visitor dependencies.
+- ```base_impl.hpp``` forward-declares the children classes, so the ```Base``` users opt-in for concrete children definitions.
+- ```user2.cpp``` does not use visitation, so will not be even rebuilt in case ```BaseChildren``` is touched. That's not the case when using ```std::variant``` directly.
+- ```user3.cpp``` depends only on ```Derived1```, so does not need to be touched when any other Derived classes are added.
+
+##### base.hpp
+```
+#pragma once
+#include "vstor/vstor.hpp"
+
+struct BaseChildren;  // note: forward-declaration
+
+class Base : public vstor::VisitableFor<BaseChildren> {
+public:
+    virtual ~Base() = default;
+    virtual int some_base_method() = 0;
+};
+
+template <typename T>
+class BaseImpl : public vstor::VisitableImpl<T, Base> {};
+```
+##### base_children.hpp
+```
+#pragma once
+#include "vstor/vstor.hpp"
+
+struct BaseChildren : vstor::VisitableListVariant<struct Derived1, struct Derived2> {};
+```
+##### base_impl.hpp
+```
+#pragma once
+#include "vstor/vstor.hpp"
+#include "base.hpp"
+#include "base_children.hpp"
+
+template <typename T>
+class BaseImpl : public vstor::VisitableImpl<T, Base> {};
+```
+##### derived1.hpp
+```
+#pragma once
+#include "base_impl.hpp"
+
+class Derived1 : public BaseImpl<Derived1> {
+    int some_base_method() override { return 1; };
+};
+```
+##### derived2.hpp
+```
+#pragma once
+#include "base_impl.hpp"
+
+class Derived2 : public BaseImpl<Derived2> {
+    int some_base_method() override { return 2; };
+};
+```
+##### user1.hpp
+```
+#pragma once
+#include "base.hpp"
+
+int user1_value_by_visitation(Base& base);
+```
+##### user1.cpp
+```
+#include "user1.hpp"
+#include "derived1.hpp"
+#include "derived2.hpp"
+#include "vstor/vstor.hpp"
+
+/**
+ * NOTE: Depends on the whole visitable structure, so will recompile when any visitable header
+ * changes.
+ * */
+int user1_value_by_visitation(Base& base)
+{
+    return base.visit_by(vstor::Overloaded{
+        [](Derived1&){ return 1; },
+        [](Derived2&){ return 2; }
+    });
+}
+```
+##### user2.hpp
+```
+#pragma once
+#include "base.hpp"
+
+int user2_value_by_virtual_calls(Base& base);
+```
+##### user2.cpp
+```
+#include "user2.hpp"
+
+/**
+ * NOTE: Does not need to know anything about the visitables, so touching the visitable structure
+ * does not cause recompilation.
+ * */
+int user2_value_by_virtual_calls(Base& base) 
+{ 
+    return base.some_base_method(); 
+}
+```
+##### user3.hpp
+```
+#pragma once
+#include "base.hpp"
+
+int user3_value_by_visitation(Base& base);
+```
+##### user3.cpp
+```
+#include "user3.hpp"
+#include "derived1.hpp"
+
+/**
+ * NOTE: Depends only on Derived1, so adding a new Derived3 to hierarchy does not require the user
+ * to alter this file.
+ * */
+int user3_value_by_visitation(Base& base)
+{
+    // clang-format off
+    return base.visit_by(vstor::Overloaded{
+        [](Derived1&){ return 1; },
+        [](auto&){ return 0; }  // return 0 for any other than Derived1
+    });
+    // clang-format on
+}
+```

@@ -1,5 +1,4 @@
 #include "user1.hpp"
-#include "base_visitables.hpp"
 #include "derived1.hpp"
 #include "derived2.hpp"
 #include "vstor/vstor.hpp"
