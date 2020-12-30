@@ -1,34 +1,21 @@
 # What is this?
-This repo provides the building blocks for implementing the Visitor design pattern in c++.
+This repo provides the building blocks for implementing the Visitor design pattern in c++, put in namespace ```vstor```.
 
-# How does it work?
-The Visitor pattern implementation provided by this repository allows the user to 
-use the same semantics for a visitation as used for ```std::visit```, i.e. use overload resolution instead
- of overriding virtual functions.
-This allows the user to return any desired type from a visitation.
-
-
-# How to use it?
-## Minimal example:
-#### Define a class hierarchy:
+# Simplest example:
 ```
 #include "vstor/vstor.hpp"
 
-using PossibleVisitables = vstor::VisitableListVariant<struct Derived1, struct Derived2>;
-using VisitableBase = vstor::VisitableFor<PossibleVisitables>;
+using BaseChildren = vstor::VisitableListVariant<
+    struct Derived1,
+    struct Derived2
+>;
 
-struct Base : VisitableBase {
+struct Base : vstor::VisitableFor<BaseChildren> {
     virtual ~Base() = default;
 };
 
-struct Derived1 : vstor::VisitableImpl<Derived1, Base> {
-};
+struct Derived1 : vstor::VisitableImpl<Derived1, Base> {};
 
-struct Derived2 : vstor::VisitableImpl<Derived2, Base> {
-};
-```
-#### And use it:
-```
 int fun(Base& base)
 {
     return base.visit_by(vstor::Overloaded{
@@ -44,6 +31,15 @@ int main()
 }
 
 ```
+
+# What is "special" about ```vstor```?
+- It's easy to add convenient visitation capabilities to already existing stable class hierarchies. Just update the headers.  
+- User can return arbitrary types from a visitation, like with ```std::visit```, compared to the "classic" visitor pattern approach in C++.
+- It's generally applicable in practice, unlike the often given advice "just refactor to ```std::vartiant```".
+- A base class user does not even need to know the possibly-visited classes, if he doesn't use the visitation capabilities. It's had to achieve it with ```std::variant```.
+- A base class user does not need to physically depend on the concrete derived class definitions, if those are not visited (see the full example below).
+
+
 ## Full example:
 The idea of this library is to require the base class user to be aware of any concrete visitable classes only when visitation is used on the base class. 
 That's achieved with allowing forward-declarations of the classes used for specifying the visitable structure. 
