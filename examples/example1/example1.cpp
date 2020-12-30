@@ -25,8 +25,7 @@ int fun(Base& base)
 // clang-format on
 }  // namespace
 
-int main()
-{
+int main() {
     Derived1 derived{};
-    return fun(derived); // returns 1
+    return fun(derived);  // returns 1
 }
