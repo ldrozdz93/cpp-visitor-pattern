@@ -69,9 +69,6 @@ public:
     virtual ~Base() = default;
     virtual int some_base_method() = 0;
 };
-
-template <typename T>
-class BaseImpl : public vstor::VisitableImpl<T, Base> {};
 ```
 ##### base_children.hpp
 ```
@@ -133,8 +130,8 @@ int user1_value_by_visitation(Base& base);
 int user1_value_by_visitation(Base& base)
 {
     return base.visit_by(vstor::Overloaded{
-        [](Derived1&){ return 1; },
-        [](Derived2&){ return 2; }
+        [](Derived1& d1){ return d1.some_derived1_method(); },
+        [](Derived2& d2){ return d2.some_derived2_method(); }
     });
 }
 ```
