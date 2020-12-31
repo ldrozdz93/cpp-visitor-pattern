@@ -37,7 +37,7 @@ int main()
 - It's easy to add convenient visitation capabilities to already existing stable class hierarchies. Just update the headers.  
 - User can return arbitrary types from a visitation, like with ```std::visit```, compared to the "classic" visitor pattern approach in C++.
 - It's generally applicable in practice, unlike the often given advice "just refactor to ```std::vartiant```".
-- A base class user does not even need to know the possibly-visited classes, if he doesn't use the visitation capabilities. It's had to achieve it with ```std::variant```.
+- A base class user does not even need to know the possibly-visited classes, if he doesn't use the visitation capabilities. It's hard to achieve it with ```std::variant```.
 - A base class user does not need to physically depend on the concrete derived class definitions, if those are not visited (see the full example below).
 
 
