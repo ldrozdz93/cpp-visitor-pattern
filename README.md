@@ -1,5 +1,6 @@
 # What is this?
-This repo provides the building blocks for implementing the Visitor design pattern in c++, put in namespace ```vstor```.
+This repo provides single-header C++20 compatible building blocks for implementing the 
+Visitor design pattern in c++, put in namespace ```vstor```.
 
 # Simplest example:
 ```
