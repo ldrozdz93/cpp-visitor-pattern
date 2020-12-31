@@ -1,5 +1,3 @@
-#include <cassert>
-#include "base.hpp"
 #include "derived1.hpp"
 #include "user1.hpp"
 #include "user2.hpp"

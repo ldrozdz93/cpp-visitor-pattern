@@ -44,13 +44,17 @@ int main()
 The idea of this library is to require the base class user to be aware of any concrete visitable classes only when visitation is used on the base class. 
 That's achieved with allowing forward-declarations of the classes used for specifying the visitable structure. 
 
-In other words, if the base class user does not use the visitor capabilities, he/she does not need to have any physical dependency towards the visitation details, apart from forward-declarations. This protects the client translation unit from unnecessary recompilation.
+In other words, if the base class user does not use the visitor capabilities, 
+he/she does not need to have any physical dependency towards the 
+visitation details, apart from forward-declarations. This protects the 
+client translation unit from unnecessary recompilation or editing.
 
 Note in the following example:
 - ```base.hpp``` forward-declares ```BaseChildren```, so the ```Base``` users opt-in for the visitor dependencies.
-- ```base_impl.hpp``` forward-declares the children classes, so the ```Base``` users opt-in for concrete children definitions.
+- ```base_children.hpp``` forward-declares the children classes, so the ```Base``` users opt-in for concrete children definitions.
 - ```user2.cpp``` does not use visitation, so will not be even rebuilt in case ```BaseChildren``` is touched. That's not the case when using ```std::variant``` directly.
-- ```user3.cpp``` depends only on ```Derived1```, so does not need to be touched when any other Derived classes are added.
+- ```user3.cpp``` depends only on ```Derived1```, so does not need to recompile if any other ```Derived``` headers are touched,
+and does not need to be touched when any new ```Derived``` classes are added.
 
 ##### base.hpp
 ```
@@ -91,7 +95,9 @@ class BaseImpl : public vstor::VisitableImpl<T, Base> {};
 #include "base_impl.hpp"
 
 class Derived1 : public BaseImpl<Derived1> {
+public:
     int some_base_method() override { return 1; };
+    int some_derived1_method(){ return 10; }
 };
 ```
 ##### derived2.hpp
@@ -100,7 +106,9 @@ class Derived1 : public BaseImpl<Derived1> {
 #include "base_impl.hpp"
 
 class Derived2 : public BaseImpl<Derived2> {
+public:
     int some_base_method() override { return 2; };
+    int some_derived2_method(){ return 20; }
 };
 ```
 ##### user1.hpp
@@ -167,11 +175,26 @@ int user3_value_by_visitation(Base& base);
  * */
 int user3_value_by_visitation(Base& base)
 {
-    // clang-format off
     return base.visit_by(vstor::Overloaded{
-        [](Derived1&){ return 1; },
+        [](Derived1& d1){ return d1.some_derived1_method(); },
         [](auto&){ return 0; }  // return 0 for any other than Derived1
     });
-    // clang-format on
 }
+```
+##### example.cpp
+```
+#include "derived1.hpp"
+#include "user1.hpp"
+#include "user2.hpp"
+#include "user3.hpp"
+
+int main()
+{
+    Derived1 derived{};
+    auto user1_result = user1_value_by_visitation(derived);
+    auto user2_result = user2_value_by_virtual_calls(derived);
+    auto user3_result = user3_value_by_visitation(derived);
+    return 0;
+}
+
 ```
