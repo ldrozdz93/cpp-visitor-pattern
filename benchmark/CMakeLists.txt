@@ -1,10 +1,7 @@
-add_executable (tests_odwyer benchmark-main.cpp benchmark.cpp)
-target_include_directories (tests_odwyer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/sltbench/include/)
-target_include_directories (tests_odwyer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include/)
+add_executable (benchmark benchmark-main.cpp benchmark.cpp)
+target_include_directories (benchmark PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/picobench/include/)
+target_include_directories (benchmark PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include/)
 
-set_target_properties(tests_odwyer PROPERTIES
+set_target_properties(benchmark PROPERTIES
         CXX_STANDARD 20
         CXX_EXTENSIONS OFF)
-
-enable_testing()
-add_test(MyTest tests_odwyer)
