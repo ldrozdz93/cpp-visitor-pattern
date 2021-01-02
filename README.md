@@ -70,22 +70,19 @@ public:
     virtual int some_base_method() = 0;
 };
 ```
-##### base_children.hpp
-```
-#pragma once
-#include "vstor/vstor.hpp"
-
-struct BaseChildren : vstor::VisitableListVariant<struct Derived1, struct Derived2> {};
-```
 ##### base_impl.hpp
 ```
 #pragma once
 #include "vstor/vstor.hpp"
 #include "base.hpp"
-#include "base_children.hpp"
 
 template <typename T>
 class BaseImpl : public vstor::VisitableImpl<T, Base> {};
+
+struct BaseChildren : vstor::VisitableListVariant<
+    struct Derived1,
+    struct Derived2
+> {};
 ```
 ##### derived1.hpp
 ```

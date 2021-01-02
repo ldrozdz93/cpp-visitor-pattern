@@ -19,10 +19,8 @@ class Overloaded : public Ts... {
 public:
     using Ts::operator()...;
 };
-#if __cpp_deduction_guides < 201907L  // if CTAD for aggregates and aliases not supported
 template <class... Ts>
 Overloaded(Ts...) -> Overloaded<Ts...>;
-#endif
 
 // TODO: implement concept: invocable_with_each_variant_option<F, VisitablesVariant>
 
