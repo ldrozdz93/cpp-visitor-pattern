@@ -1,110 +1,35 @@
 #include <string>
 #include <type_traits>
+#include <vector>
+#include <set>
+#include <unordered_set>
 
-#include "../tests/catch.hpp"
+#include "sltbench/Bench.h"
+#include "visitor_odwyer.hpp"
 #include "vstor/vstor.hpp"
 
-namespace my {
-
-template <class T, class U>
-struct match_cvref {
-    using type = U;
-};
-template <class T, class U>
-struct match_cvref<T&, U> {
-    using type = U&;
-};
-template <class T, class U>
-struct match_cvref<T&&, U> {
-    using type = U&&;
-};
-template <class T, class U>
-struct match_cvref<const T, U> {
-    using type = const U;
-};
-template <class T, class U>
-struct match_cvref<const T&, U> {
-    using type = const U&;
-};
-template <class T, class U>
-struct match_cvref<const T&&, U> {
-    using type = const U&&;
-};
-template <class T, class U>
-using match_cvref_t = typename match_cvref<T, U>::type;
-
-template <class Base, class F, class E>
-struct visit_impl {
-    template <int...>  // this is call<>(b, f, e)
-    static auto call(Base&& b, const F&, const E& e)
-    {
-        return e(static_cast<Base&&>(b));
-    }
-
-    template <class DerivedClass, class... Rest>
-    static auto call(Base&& b, const F& f, const E& e)
-    {
-        using Derived = my::match_cvref_t<Base, DerivedClass>;
-        using T = decltype(f(static_cast<Derived&&>(b)));
-        using ErrorT = decltype(e(static_cast<Base&&>(b)));
-        if (typeid(b) == typeid(DerivedClass)) {
-            return f(static_cast<Derived&&>(b));
-        } else if constexpr (sizeof...(Rest) != 0) {
-            return call<Rest...>(static_cast<Base&&>(b), f, e);
-        } else if constexpr (std::is_void_v<ErrorT> && !std::is_void_v<T>) {
-            // If e(b) has type void, assume it exits by throwing.
-            e(static_cast<Base&&>(b));
-            throw std::bad_cast();  // we expect this to be unreachable
-        } else {
-            return e(static_cast<Base&&>(b));
-        }
-    }
-};
-
-template <class... DerivedClasses, class Base, class F, class E>
-auto visit(Base&& base, const F& f, const E& e)
-{
-    static_assert(!std::is_pointer_v<std::remove_reference_t<Base>>,
-                  "Argument must be (reference-to) class type, not pointer type");
-    static_assert(std::is_polymorphic_v<std::remove_reference_t<Base>>,
-                  "Argument must be of polymorphic class type");
-    static_assert((std::is_polymorphic_v<DerivedClasses> && ...),
-                  "Template arguments must all be polymorphic class types");
-
-    return visit_impl<Base, F, E>::template call<DerivedClasses...>(static_cast<Base&&>(base), f,
-                                                                    e);
-}
-
-template <class... DerivedClasses, class Base, class F>
-auto visit(Base&& b, const F& f)
-{
-    return my::visit<DerivedClasses...>(static_cast<Base&&>(b), f,
-                                        [](Base&&) { throw std::bad_cast(); });
-}
-
-}  // namespace my
 namespace {
 
 using vstor::Overloaded;
 
-TEST_CASE("O'Dwyer visitor")
-{
-    struct Base {
-        virtual ~Base() = default;
-    };
-    struct Derived1 : Base {
-    };
-    struct Derived2 : Base {
-    };
+static const std::vector<size_t> insert_to_set_args{ 1000, 10000, 100000, 1000000 };
 
-    SECTION("visitor")
-    {
-        Derived2 derived2{};
-        Base& base = derived2;
-        const auto res = my::visit<Derived1, Derived2>(
-            base, vstor::Overloaded{[](Derived1&) { return 1; }, [](Derived2&) { return 2; }});
-        REQUIRE(res == 2);
-    }
+static void InsertToSetSorted(const size_t& count)
+{
+    std::set< size_t > s;
+    for (size_t i = 0; i < count; ++i)
+        s.insert(i);
 }
+SLTBENCH_FUNCTION_WITH_ARGS(InsertToSetSorted, insert_to_set_args);
+
+static void InsertToSetUnordered(const size_t& count)
+{
+    std::unordered_set<size_t> s;
+    s.reserve(count);
+    for (size_t i = 0; i < count; ++i)
+        s.insert(i);
+}
+SLTBENCH_FUNCTION_WITH_ARGS(InsertToSetUnordered, insert_to_set_args);
+
 
 }  // namespace
