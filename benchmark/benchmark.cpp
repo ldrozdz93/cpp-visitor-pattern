@@ -1,11 +1,12 @@
 #define PICOBENCH_DEBUG
 #define PICOBENCH_IMPLEMENT_WITH_MAIN
-#define PICOBENCH_DEFAULT_ITERATIONS          \
-    {                                         \
-        10, 100, 1000, 10000, 100000, 1000000 \
+#define PICOBENCH_DEFAULT_ITERATIONS       \
+    {                                      \
+        1, 10, 100, 1000, 100000, 10000000 \
     }
 #include "picobench/picobench.hpp"
 #include "visitor_odwyer.hpp"
+#include "visitor_pikus.hpp"
 #include "vstor/vstor.hpp"
 
 // DoNotOptimize implementation copypasted from google-benchmark
@@ -41,6 +42,35 @@ struct Derived9 : vstor::VisitableImpl<Derived9, Base> {};
 struct Derived10 : vstor::VisitableImpl<Derived10, Base> {};
 // clang-format on
 
+namespace pikus_alternative_hierarchy {
+
+using BaseVisitor = pikus::Visitor<struct D1, struct D2, struct D3, struct D4, struct D5, struct D6,
+                                   struct D7, struct D8, struct D9, struct D10>;
+struct B {
+    virtual ~B() = default;
+    virtual void accept(BaseVisitor& v) = 0;
+};
+
+template <typename Derived>
+struct Visitable : public B {
+    void accept(BaseVisitor& v) override { v.visit(static_cast<Derived*>(this)); }
+};
+
+// clang-format off
+struct D1 : Visitable<D1> {};
+struct D2 : Visitable<D2> {};
+struct D3 : Visitable<D3> {};
+struct D4 : Visitable<D4> {};
+struct D5 : Visitable<D5> {};
+struct D6 : Visitable<D6> {};
+struct D7 : Visitable<D7> {};
+struct D8 : Visitable<D8> {};
+struct D9 : Visitable<D9> {};
+struct D10 : Visitable<D10> {};
+// clang-format on
+
+}  // namespace pikus_alternative_hierarchy
+
 void vstor_visit(picobench::state& s)
 {
     Derived10 derived{};
@@ -72,3 +102,32 @@ void odwyer_visit(picobench::state& s)
     }
 }
 PICOBENCH(odwyer_visit);
+
+void pikus_visit(picobench::state& s)
+{
+    using namespace pikus_alternative_hierarchy;
+    D5 derived{};
+    B* current_base = &derived;
+    for (auto _ : s) {
+        int result{};
+        auto visitor = pikus::lambda_visitor<pikus_alternative_hierarchy::BaseVisitor>(
+            // clang-format off
+            [&](D1*) { result = 1; },
+            [&](D2*) { result = 2; },
+            [&](D3*) { result = 3; },
+            [&](D4*) { result = 4; },
+            [&](D5*) { result = 5; },
+            [&](D6*) { result = 6; },
+            [&](D7*) { result = 7; },
+            [&](D8*) { result = 8; },
+            [&](D9*) { result = 9; },
+            [&](D10*) { result = 10; }
+            // clang-format on
+        );
+        current_base->accept(visitor);
+        auto not_optimized = result;
+        DoNotOptimize(not_optimized);
+        DoNotOptimize(current_base);
+    }
+}
+PICOBENCH(pikus_visit);
