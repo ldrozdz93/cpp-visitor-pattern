@@ -1,5 +1,5 @@
-#include <tuple>
 #include <random>
+#include <tuple>
 
 #include <benchmark/benchmark.h>
 
@@ -7,14 +7,14 @@
 #include "visitor_pikus.hpp"
 #include "vstor/vstor.hpp"
 
-
 namespace util {
 
-template<size_t I = 0, typename... Tp, typename F>
-void for_each_tup_elem(std::tuple<Tp...>& t, F &&f) {
+template <size_t I = 0, typename... Tp, typename F>
+void for_each_tup_elem(std::tuple<Tp...>& t, F&& f)
+{
     f(std::get<I>(t));
-    if constexpr(I+1 != sizeof...(Tp)) {
-        for_each_tup_elem<I+1>(t, std::forward<F>(f));
+    if constexpr (I + 1 != sizeof...(Tp)) {
+        for_each_tup_elem<I + 1>(t, std::forward<F>(f));
     }
 }
 
@@ -27,19 +27,20 @@ using BaseChildren =
 
 struct Base : vstor::VisitableFor<BaseChildren> {
     virtual ~Base() = default;
+    virtual int value_by_virtual() = 0;
 };
 
 // clang-format off
-struct Derived1 : vstor::VisitableImpl<Derived1, Base> {};
-struct Derived2 : vstor::VisitableImpl<Derived2, Base> {};
-struct Derived3 : vstor::VisitableImpl<Derived3, Base> {};
-struct Derived4 : vstor::VisitableImpl<Derived4, Base> {};
-struct Derived5 : vstor::VisitableImpl<Derived5, Base> {};
-struct Derived6 : vstor::VisitableImpl<Derived6, Base> {};
-struct Derived7 : vstor::VisitableImpl<Derived7, Base> {};
-struct Derived8 : vstor::VisitableImpl<Derived8, Base> {};
-struct Derived9 : vstor::VisitableImpl<Derived9, Base> {};
-struct Derived10 : vstor::VisitableImpl<Derived10, Base> {};
+struct Derived1 : vstor::VisitableImpl<Derived1, Base> { int value_by_virtual() override {return 13654;} };
+struct Derived2 : vstor::VisitableImpl<Derived2, Base> { int value_by_virtual() override {return 23654;} };
+struct Derived3 : vstor::VisitableImpl<Derived3, Base> { int value_by_virtual() override {return 33654;} };
+struct Derived4 : vstor::VisitableImpl<Derived4, Base> { int value_by_virtual() override {return 43654;} };
+struct Derived5 : vstor::VisitableImpl<Derived5, Base> { int value_by_virtual() override {return 53654;} };
+struct Derived6 : vstor::VisitableImpl<Derived6, Base> { int value_by_virtual() override {return 63654;} };
+struct Derived7 : vstor::VisitableImpl<Derived7, Base> { int value_by_virtual() override {return 73654;} };
+struct Derived8 : vstor::VisitableImpl<Derived8, Base> { int value_by_virtual() override {return 83654;} };
+struct Derived9 : vstor::VisitableImpl<Derived9, Base> { int value_by_virtual() override {return 93654;} };
+struct Derived10 : vstor::VisitableImpl<Derived10, Base> { int value_by_virtual() override {return 103654;} };
 // clang-format on
 
 namespace pikus_alternative_hierarchy {
@@ -73,14 +74,22 @@ struct D10 : Visitable<D10> {};
 
 class One_single_call_from_the_hierarchy : public benchmark::Fixture {
 public:
-    void SetUp(const ::benchmark::State& state) {
-    }
+    void SetUp(const ::benchmark::State& state) {}
 
-    void TearDown(const ::benchmark::State& state) {
-    }
+    void TearDown(const ::benchmark::State& state) {}
 };
 
-BENCHMARK_F(One_single_call_from_the_hierarchy,  vstor_visit)(benchmark::State& s)
+BENCHMARK_F(One_single_call_from_the_hierarchy, virtual_call_without_visitor)(benchmark::State& s)
+{
+    Derived10 derived{};
+    Base* current_base = &derived;
+    for (auto _ : s) {
+        auto not_optimized = current_base->value_by_virtual();
+        benchmark::DoNotOptimize(not_optimized);
+        benchmark::DoNotOptimize(current_base);
+    }
+}
+BENCHMARK_F(One_single_call_from_the_hierarchy, vstor_visit)(benchmark::State& s)
 {
     Derived10 derived{};
     Base* current_base = &derived;
@@ -93,7 +102,7 @@ BENCHMARK_F(One_single_call_from_the_hierarchy,  vstor_visit)(benchmark::State& 
         benchmark::DoNotOptimize(current_base);
     }
 }
-BENCHMARK_F(One_single_call_from_the_hierarchy,  odwyer_visit)(benchmark::State& s)
+BENCHMARK_F(One_single_call_from_the_hierarchy, odwyer_visit)(benchmark::State& s)
 {
     Derived10 derived{};
     Base* current_base = &derived;
@@ -108,7 +117,7 @@ BENCHMARK_F(One_single_call_from_the_hierarchy,  odwyer_visit)(benchmark::State&
         benchmark::DoNotOptimize(current_base);
     }
 }
-BENCHMARK_F(One_single_call_from_the_hierarchy,  pikus_visit)(benchmark::State& s)
+BENCHMARK_F(One_single_call_from_the_hierarchy, pikus_visit)(benchmark::State& s)
 {
     using namespace pikus_alternative_hierarchy;
     D5 derived{};
@@ -142,14 +151,28 @@ inline auto shuffle = [](auto& range) {
 
 class Calling_every_class_from_the_hierarchy : public benchmark::Fixture {
 public:
-    void SetUp(const ::benchmark::State& state) {
-    }
+    void SetUp(const ::benchmark::State& state) {}
 
-    void TearDown(const ::benchmark::State& state) {
-    }
+    void TearDown(const ::benchmark::State& state) {}
 };
 
-BENCHMARK_F(Calling_every_class_from_the_hierarchy,  vstor_visit_all)(benchmark::State& s)
+BENCHMARK_F(Calling_every_class_from_the_hierarchy, virtual_call_without_visitor)
+(benchmark::State& s)
+{
+    using AllDerived = std::tuple<Derived1, Derived2, Derived3, Derived4, Derived5, Derived6,
+                                  Derived7, Derived8, Derived9, Derived10>;
+    AllDerived all_derived{};
+    std::vector<Base*> all_bases{};
+    util::for_each_tup_elem(all_derived, [&](auto& derived) { all_bases.push_back(&derived); });
+    shuffle(all_bases);
+    for (auto _ : s) {
+        for (auto* current_base : all_bases) {
+            auto not_optimized = current_base->value_by_virtual();
+            benchmark::DoNotOptimize(not_optimized);
+        }
+    }
+}
+BENCHMARK_F(Calling_every_class_from_the_hierarchy, vstor_visit_all)(benchmark::State& s)
 {
     using AllDerived = std::tuple<Derived1, Derived2, Derived3, Derived4, Derived5, Derived6,
                                   Derived7, Derived8, Derived9, Derived10>;
@@ -181,7 +204,7 @@ BENCHMARK_F(Calling_every_class_from_the_hierarchy,  vstor_visit_all)(benchmark:
         }
     }
 }
-BENCHMARK_F(Calling_every_class_from_the_hierarchy,  odwyer_visit_all)(benchmark::State& s)
+BENCHMARK_F(Calling_every_class_from_the_hierarchy, odwyer_visit_all)(benchmark::State& s)
 {
     using AllDerived = std::tuple<Derived1, Derived2, Derived3, Derived4, Derived5, Derived6,
                                   Derived7, Derived8, Derived9, Derived10>;
@@ -216,7 +239,7 @@ BENCHMARK_F(Calling_every_class_from_the_hierarchy,  odwyer_visit_all)(benchmark
         }
     }
 }
-BENCHMARK_F(Calling_every_class_from_the_hierarchy,  pikus_visit_all)(benchmark::State& s)
+BENCHMARK_F(Calling_every_class_from_the_hierarchy, pikus_visit_all)(benchmark::State& s)
 {
     using namespace pikus_alternative_hierarchy;
 
