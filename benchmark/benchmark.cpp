@@ -1,5 +1,6 @@
 #include <random>
 #include <tuple>
+#include <variant>
 
 #include <benchmark/benchmark.h>
 
@@ -73,10 +74,6 @@ struct D10 : Visitable<D10> {};
 }  // namespace pikus_alternative_hierarchy
 
 class One_single_call_from_the_hierarchy : public benchmark::Fixture {
-public:
-    void SetUp(const ::benchmark::State& state) {}
-
-    void TearDown(const ::benchmark::State& state) {}
 };
 
 BENCHMARK_F(One_single_call_from_the_hierarchy, virtual_call_without_visitor)(benchmark::State& s)
@@ -85,6 +82,23 @@ BENCHMARK_F(One_single_call_from_the_hierarchy, virtual_call_without_visitor)(be
     Base* current_base = &derived;
     for (auto _ : s) {
         auto not_optimized = current_base->value_by_virtual();
+        benchmark::DoNotOptimize(not_optimized);
+        benchmark::DoNotOptimize(current_base);
+    }
+}
+BENCHMARK_F(One_single_call_from_the_hierarchy, std_variant_without_virtual_calls)
+(benchmark::State& s)
+{
+    Derived10 derived{};
+    using Base = std::variant<Derived1, Derived2, Derived3, Derived4, Derived5, Derived6, Derived7,
+                              Derived8, Derived9, Derived10>;
+    Base current_base = derived;
+    for (auto _ : s) {
+        auto not_optimized = std::visit(vstor::Overloaded{
+                                            [](Derived1&) { return 1; },
+                                            [](auto&) { return 2; },
+                                        },
+                                        current_base);
         benchmark::DoNotOptimize(not_optimized);
         benchmark::DoNotOptimize(current_base);
     }
@@ -150,10 +164,6 @@ inline auto shuffle = [](auto& range) {
 };
 
 class Calling_every_class_from_the_hierarchy : public benchmark::Fixture {
-public:
-    void SetUp(const ::benchmark::State& state) {}
-
-    void TearDown(const ::benchmark::State& state) {}
 };
 
 BENCHMARK_F(Calling_every_class_from_the_hierarchy, virtual_call_without_visitor)
@@ -168,6 +178,38 @@ BENCHMARK_F(Calling_every_class_from_the_hierarchy, virtual_call_without_visitor
     for (auto _ : s) {
         for (auto* current_base : all_bases) {
             auto not_optimized = current_base->value_by_virtual();
+            benchmark::DoNotOptimize(not_optimized);
+        }
+    }
+}
+BENCHMARK_F(Calling_every_class_from_the_hierarchy, std_variant_without_virtual_calls)
+(benchmark::State& s)
+{
+    using AllDerived = std::tuple<Derived1, Derived2, Derived3, Derived4, Derived5, Derived6,
+                                  Derived7, Derived8, Derived9, Derived10>;
+    using Base = std::variant<Derived1, Derived2, Derived3, Derived4, Derived5, Derived6, Derived7,
+                              Derived8, Derived9, Derived10>;
+    AllDerived all_derived{};
+    std::vector<Base> all_bases{};
+    util::for_each_tup_elem(all_derived, [&](auto& derived) { all_bases.push_back(derived); });
+    shuffle(all_bases);
+    for (auto _ : s) {
+        for (auto& current_base : all_bases) {
+            auto not_optimized = std::visit(vstor::Overloaded{
+                                                // clang-format off
+                                                [](Derived1&) { return 13654; },
+                                                [](Derived2&) { return 23654; },
+                                                [](Derived3&) { return 33654; },
+                                                [](Derived4&) { return 43654; },
+                                                [](Derived5&) { return 53654; },
+                                                [](Derived6&) { return 63654; },
+                                                [](Derived7&) { return 73654; },
+                                                [](Derived8&) { return 83654; },
+                                                [](Derived9&) { return 93654; },
+                                                [](Derived10&) { return 103654; }
+                                                // clang-format on
+                                            },
+                                            current_base);
             benchmark::DoNotOptimize(not_optimized);
         }
     }
