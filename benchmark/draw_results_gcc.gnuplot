@@ -16,6 +16,8 @@ unset key             # turn off all titles
 myBoxWidth = 0.8
 set offsets 0,0,0.5-myBoxWidth/2.,0.5
 
+set xlabel "call time [ns]"
+
 plot $Data using 2:0:(0):2:($0-myBoxWidth/2.):($0+myBoxWidth/2.):($0+1):ytic(1) with boxxyerror lc var
 
 pause -1 "Hit any key to continue"
