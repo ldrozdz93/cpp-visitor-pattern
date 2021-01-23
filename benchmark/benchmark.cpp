@@ -82,18 +82,7 @@ struct D10 : Visitable<D10> {};
 
 class One_single_call_from_the_hierarchy : public benchmark::Fixture {
 };
-
-BENCHMARK_F(One_single_call_from_the_hierarchy, virtual_call_without_visitor)(benchmark::State& s)
-{
-    Derived10 derived{};
-    Base* current_base = &derived;
-    for (auto _ : s) {
-        auto not_optimized = current_base->value_by_virtual();
-        benchmark::DoNotOptimize(not_optimized);
-        benchmark::DoNotOptimize(current_base);
-    }
-}
-BENCHMARK_F(One_single_call_from_the_hierarchy, virtual_call_without_visitor_for_object_on_heap)
+BENCHMARK_F(One_single_call_from_the_hierarchy, virtual_call_without_visitor)
 (benchmark::State& s)
 {
     auto current_base = std::make_unique<Derived10>();
@@ -177,24 +166,7 @@ BENCHMARK_F(One_single_call_from_the_hierarchy, pikus_visit)(benchmark::State& s
 
 class Calling_every_class_from_the_hierarchy : public benchmark::Fixture {
 };
-
 BENCHMARK_F(Calling_every_class_from_the_hierarchy, virtual_call_without_visitor)
-(benchmark::State& s)
-{
-    using AllDerived = std::tuple<Derived1, Derived2, Derived3, Derived4, Derived5, Derived6,
-                                  Derived7, Derived8, Derived9, Derived10>;
-    AllDerived all_derived{};
-    std::vector<Base*> all_bases{};
-    util::for_each_tup_elem(all_derived, [&](auto& derived) { all_bases.push_back(&derived); });
-    util::shuffle(all_bases);
-    for (auto _ : s) {
-        for (auto* current_base : all_bases) {
-            auto not_optimized = current_base->value_by_virtual();
-            benchmark::DoNotOptimize(not_optimized);
-        }
-    }
-}
-BENCHMARK_F(Calling_every_class_from_the_hierarchy, virtual_call_without_visitor_for_object_on_heap)
 (benchmark::State& s)
 {
     using AllDerived = std::tuple<Derived1, Derived2, Derived3, Derived4, Derived5, Derived6,
