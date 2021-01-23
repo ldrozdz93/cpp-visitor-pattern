@@ -1,26 +1,12 @@
 #include <tuple>
+#include <random>
 
-#define PICOBENCH_DEBUG
-#define PICOBENCH_IMPLEMENT_WITH_MAIN
-#define PICOBENCH_DEFAULT_ITERATIONS      \
-    {                                     \
-        1, 10, 100, 1000, 100000, 1000000 \
-    }
-#include "picobench/picobench.hpp"
+#include <benchmark/benchmark.h>
+
 #include "visitor_odwyer.hpp"
 #include "visitor_pikus.hpp"
 #include "vstor/vstor.hpp"
 
-// DoNotOptimize implementation copypasted from google-benchmark
-template <class Tp>
-__attribute__((noinline)) void DoNotOptimize(Tp const& value)
-{
-#if defined(__clang__)
-    asm volatile("" : : "g"(value) : "memory");
-#else
-    asm volatile("" : : "i,r,m"(value) : "memory");
-#endif
-}
 
 namespace util {
 
@@ -28,7 +14,7 @@ template<size_t I = 0, typename... Tp, typename F>
 void for_each_tup_elem(std::tuple<Tp...>& t, F &&f) {
     f(std::get<I>(t));
     if constexpr(I+1 != sizeof...(Tp)) {
-        for_each_apply<I+1>(t, std::forward<F>(f));
+        for_each_tup_elem<I+1>(t, std::forward<F>(f));
     }
 }
 
@@ -85,9 +71,16 @@ struct D10 : Visitable<D10> {};
 
 }  // namespace pikus_alternative_hierarchy
 
-PICOBENCH_SUITE("One single call from the hierarchy");
+class One_single_call_from_the_hierarchy : public benchmark::Fixture {
+public:
+    void SetUp(const ::benchmark::State& state) {
+    }
 
-void vstor_visit(picobench::state& s)
+    void TearDown(const ::benchmark::State& state) {
+    }
+};
+
+BENCHMARK_F(One_single_call_from_the_hierarchy,  vstor_visit)(benchmark::State& s)
 {
     Derived10 derived{};
     Base* current_base = &derived;
@@ -96,13 +89,11 @@ void vstor_visit(picobench::state& s)
             [](Derived1&) { return 1; },
             [](auto&) { return 2; },
         });
-        DoNotOptimize(not_optimized);
-        DoNotOptimize(current_base);
+        benchmark::DoNotOptimize(not_optimized);
+        benchmark::DoNotOptimize(current_base);
     }
 }
-PICOBENCH(vstor_visit);
-
-void odwyer_visit(picobench::state& s)
+BENCHMARK_F(One_single_call_from_the_hierarchy,  odwyer_visit)(benchmark::State& s)
 {
     Derived10 derived{};
     Base* current_base = &derived;
@@ -113,13 +104,11 @@ void odwyer_visit(picobench::state& s)
                                [](Derived5&) { return 1; },
                                [](auto&) { return 2; },
                            });
-        DoNotOptimize(not_optimized);
-        DoNotOptimize(current_base);
+        benchmark::DoNotOptimize(not_optimized);
+        benchmark::DoNotOptimize(current_base);
     }
 }
-PICOBENCH(odwyer_visit);
-
-void pikus_visit(picobench::state& s)
+BENCHMARK_F(One_single_call_from_the_hierarchy,  pikus_visit)(benchmark::State& s)
 {
     using namespace pikus_alternative_hierarchy;
     D5 derived{};
@@ -141,20 +130,26 @@ void pikus_visit(picobench::state& s)
             // clang-format on
         );
         current_base->accept(visitor);
-        DoNotOptimize(result);
-        DoNotOptimize(current_base);
+        benchmark::DoNotOptimize(result);
+        benchmark::DoNotOptimize(current_base);
     }
 }
-PICOBENCH(pikus_visit);
 
 inline auto shuffle = [](auto& range) {
     std::shuffle(std::begin(range), std::end(range),
                  std::default_random_engine{std::random_device{}()});
 };
 
-PICOBENCH_SUITE("Calling every class from the hierarchy");
+class Calling_every_class_from_the_hierarchy : public benchmark::Fixture {
+public:
+    void SetUp(const ::benchmark::State& state) {
+    }
 
-void vstor_visit_all(picobench::state& s)
+    void TearDown(const ::benchmark::State& state) {
+    }
+};
+
+BENCHMARK_F(Calling_every_class_from_the_hierarchy,  vstor_visit_all)(benchmark::State& s)
 {
     using AllDerived = std::tuple<Derived1, Derived2, Derived3, Derived4, Derived5, Derived6,
                                   Derived7, Derived8, Derived9, Derived10>;
@@ -182,13 +177,11 @@ void vstor_visit_all(picobench::state& s)
                 [](Derived10&) { return 103654; }
                 // clang-format on
             });
-            DoNotOptimize(not_optimized);
+            benchmark::DoNotOptimize(not_optimized);
         }
     }
 }
-PICOBENCH(vstor_visit_all);
-
-void odwyer_visit_all(picobench::state& s)
+BENCHMARK_F(Calling_every_class_from_the_hierarchy,  odwyer_visit_all)(benchmark::State& s)
 {
     using AllDerived = std::tuple<Derived1, Derived2, Derived3, Derived4, Derived5, Derived6,
                                   Derived7, Derived8, Derived9, Derived10>;
@@ -219,13 +212,11 @@ void odwyer_visit_all(picobench::state& s)
                     [](Derived10&) { return 103654; }
                     // clang-format on
                 });
-            DoNotOptimize(not_optimized);
+            benchmark::DoNotOptimize(not_optimized);
         }
     }
 }
-PICOBENCH(odwyer_visit_all);
-
-void pikus_visit_all(picobench::state& s)
+BENCHMARK_F(Calling_every_class_from_the_hierarchy,  pikus_visit_all)(benchmark::State& s)
 {
     using namespace pikus_alternative_hierarchy;
 
@@ -252,8 +243,9 @@ void pikus_visit_all(picobench::state& s)
                 // clang-format on
             );
             current_base->accept(visitor);
-            DoNotOptimize(result);
+            benchmark::DoNotOptimize(result);
         }
     }
 }
-PICOBENCH(pikus_visit_all);
+
+BENCHMARK_MAIN();
