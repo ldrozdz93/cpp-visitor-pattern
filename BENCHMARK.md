@@ -17,14 +17,43 @@ int main()
 
 ```
 # Benchmark
-- Visitor pattern by Fedor Pikus: https://youtu.be/MdtYi0vvct0?t=880
-    - uses double virtual dispatch (```vstor``` uses virtual dispatch + ```std::variant``` dispatch)
-    - uses a fixed return type (```vstor``` allows arbitrary return types)
-    - puts restrictions on the visitor overload set, i.e. correct order of types and no ```auto&``` types alowed (```vstor``` accepts any overload set)
-    - TODO: add comparison benchmark 
-- Visitor pattern by  Arthur O’Dwyer: https://quuxplusone.github.io/blog/2020/09/29/oop-visit/
-    - uses sequential typeid comparison (```vstor``` uses virtual dispatch + ```std::variant``` dispatch)
-    - specifies the concrete visitable types in the call site, which requires runtime error handling (```vstor``` knows the types are correct by compilation)
-    - the above point makes it less intrusive (```vstor``` knows forces the usage of inheritance and CRTP)
-    - TODO: add comparison benchmark
-Please write to me if you know any other valuable alternatives to compare with. 
+Runtime overhead for the following implementations was tested:
+
+###Competitors:
+
+- BASELINE: a pure **virtual call** via a base class pointer
+  - no visitor pattern at all 
+  - instance allocated on the heap as a ```unique_ptr```, which in practice is the simplest and the most common rival to
+  using the visitor pattern in the first place.
+- Visitor pattern ```vstor```
+  - uses double dispatch: first virtual, then ```std::variant``` based
+- Visitor pattern by **Fedor Pikus**: https://github.com/PacktPublishing/Hands-On-Design-Patterns-with-CPP/blob/master/Chapter18/04b_visitor_template.C
+    - uses double virtual dispatch: first on the visitable, second on the visitor
+- Visitor pattern by  **Arthur O’Dwyer**: https://quuxplusone.github.io/blog/2020/09/29/oop-visit/
+    - uses sequential typeid comparison
+- **std::variant**
+    - uses single runtime dispatch (non-virtual based)
+  
+### Used compilers:
+- gcc-10
+- clang-10
+
+###Scenario 1:
+A class hierarchy of 1 pure virtual base class and 10 derived classes is defined, 
+but only one derived class is constructed. We then use each
+of the calling strategies mentioned above to compute a value for that instance.
+
+The specific benchmark implementation depends on what api is required by the competing 
+implementation, so see [benchmark.cpp](path to) for details.
+
+###Scenario 2:
+A class hierarchy of 1 pure virtual base class and 10 derived classes is defined,
+and every derived class is pushed to a ```std::vector```. Next, the vector is shuffled.
+We then iterate over all the instances and use each of the calling strategies mentioned 
+above to compute a value for the given instance.
+
+The specific benchmark implementation depends on what api is required by the competing
+implementation, so see [benchmark.cpp](path to) for details.
+
+##Results:
+ 
