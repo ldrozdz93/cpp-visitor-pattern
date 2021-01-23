@@ -247,5 +247,3 @@ BENCHMARK_F(Calling_every_class_from_the_hierarchy,  pikus_visit_all)(benchmark:
         }
     }
 }
-
-BENCHMARK_MAIN();
