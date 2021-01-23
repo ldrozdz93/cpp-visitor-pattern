@@ -1,6 +1,3 @@
-#include <boost/hana/ext/std/tuple.hpp>
-#include <boost/hana/for_each.hpp>
-#include <boost/hana/size.hpp>
 #include <tuple>
 
 #define PICOBENCH_DEBUG
@@ -24,6 +21,18 @@ __attribute__((noinline)) void DoNotOptimize(Tp const& value)
     asm volatile("" : : "i,r,m"(value) : "memory");
 #endif
 }
+
+namespace util {
+
+template<size_t I = 0, typename... Tp, typename F>
+void for_each_tup_elem(std::tuple<Tp...>& t, F &&f) {
+    f(std::get<I>(t));
+    if constexpr(I+1 != sizeof...(Tp)) {
+        for_each_apply<I+1>(t, std::forward<F>(f));
+    }
+}
+
+}  // namespace util
 
 using BaseChildren =
     vstor::VisitableListVariant<struct Derived1, struct Derived2, struct Derived3, struct Derived4,
@@ -151,7 +160,7 @@ void vstor_visit_all(picobench::state& s)
                                   Derived7, Derived8, Derived9, Derived10>;
     AllDerived all_derived{};
     std::vector<Base*> all_bases{};
-    boost::hana::for_each(all_derived, [&](auto& derived) { all_bases.push_back(&derived); });
+    util::for_each_tup_elem(all_derived, [&](auto& derived) { all_bases.push_back(&derived); });
     shuffle(all_bases);
     for (auto _ : s) {
         auto visitor = vstor::Overloaded{
@@ -185,7 +194,7 @@ void odwyer_visit_all(picobench::state& s)
                                   Derived7, Derived8, Derived9, Derived10>;
     AllDerived all_derived{};
     std::vector<Base*> all_bases{};
-    boost::hana::for_each(all_derived, [&](auto& derived) { all_bases.push_back(&derived); });
+    util::for_each_tup_elem(all_derived, [&](auto& derived) { all_bases.push_back(&derived); });
     shuffle(all_bases);
     for (auto _ : s) {
         auto visitor = vstor::Overloaded{
@@ -223,7 +232,7 @@ void pikus_visit_all(picobench::state& s)
     using AllDerived = std::tuple<D1, D2, D3, D4, D5, D6, D7, D8, D9, D10>;
     AllDerived all_derived{};
     std::vector<B*> all_bases{};
-    boost::hana::for_each(all_derived, [&](auto& derived) { all_bases.push_back(&derived); });
+    util::for_each_tup_elem(all_derived, [&](auto& derived) { all_bases.push_back(&derived); });
     shuffle(all_bases);
     for (auto _ : s) {
         int result{};
