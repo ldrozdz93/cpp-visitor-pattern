@@ -38,22 +38,36 @@ Runtime overhead for the following implementations was tested:
 - gcc-10
 - clang-10
 
-###Scenario 1:
-A class hierarchy of 1 pure virtual base class and 10 derived classes is defined, 
-but only one derived class is constructed. We then use each
-of the calling strategies mentioned above to compute a value for that instance.
-
-The specific benchmark implementation depends on what api is required by the competing 
-implementation, so see [benchmark.cpp](path to) for details.
-
-###Scenario 2:
+###Scenario:
 A class hierarchy of 1 pure virtual base class and 10 derived classes is defined,
 and every derived class is pushed to a ```std::vector```. Next, the vector is shuffled.
 We then iterate over all the instances and use each of the calling strategies mentioned 
 above to compute a value for the given instance.
 
-The specific benchmark implementation depends on what api is required by the competing
+The following pseudo-c++ shows the scenario:
+```c++
+std::vector</*some variant, or a pointer to an abstract base class*/> objects{};
+shuffle(objects);
+for (auto _ : benchmark_state){
+    for (auto& visitable : objects){
+        /* visit the visitable with the tested strategy */
+    }
+}
+```
+
+The specific benchmark case implementation depends on what api is required by the competing
 implementation, so see [benchmark.cpp](path to) for details.
 
 ##Results:
- 
+
+A simple virtual call is taken as the benchmark base, separated for clang and gcc. The results are
+not meant to be precise, but rather present a general trend.
+
+The absolute numbers are not important. It's the relative performance that should be analyzed.
+
+![vstor_benchmark_results](benchmark/benchmark_chart.png)
+
+
+######clang results:
+```vstor``` internally uses a virtual dispach and a ```std::visit``` based visitation.
+

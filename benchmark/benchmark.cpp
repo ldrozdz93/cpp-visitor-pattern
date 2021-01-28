@@ -166,7 +166,7 @@ BENCHMARK_F(One_single_call_from_the_hierarchy, pikus_visit)(benchmark::State& s
 
 class Calling_every_class_from_the_hierarchy : public benchmark::Fixture {
 };
-BENCHMARK_F(Calling_every_class_from_the_hierarchy, virtual_call_without_visitor)
+BENCHMARK_F(Calling_every_class_from_the_hierarchy, virtual_method_call)
 (benchmark::State& s)
 {
     using AllDerived = std::tuple<Derived1, Derived2, Derived3, Derived4, Derived5, Derived6,
@@ -184,7 +184,7 @@ BENCHMARK_F(Calling_every_class_from_the_hierarchy, virtual_call_without_visitor
         }
     }
 }
-BENCHMARK_F(Calling_every_class_from_the_hierarchy, std_variant_without_virtual_calls)
+BENCHMARK_F(Calling_every_class_from_the_hierarchy, std_variant_visit)
 (benchmark::State& s)
 {
     using AllDerived = std::tuple<Derived1, Derived2, Derived3, Derived4, Derived5, Derived6,
@@ -217,7 +217,7 @@ BENCHMARK_F(Calling_every_class_from_the_hierarchy, std_variant_without_virtual_
         }
     }
 }
-BENCHMARK_F(Calling_every_class_from_the_hierarchy, vstor_visit_all)(benchmark::State& s)
+BENCHMARK_F(Calling_every_class_from_the_hierarchy, vstor_visitor)(benchmark::State& s)
 {
     using AllDerived = std::tuple<Derived1, Derived2, Derived3, Derived4, Derived5, Derived6,
                                   Derived7, Derived8, Derived9, Derived10>;
@@ -249,7 +249,7 @@ BENCHMARK_F(Calling_every_class_from_the_hierarchy, vstor_visit_all)(benchmark::
         }
     }
 }
-BENCHMARK_F(Calling_every_class_from_the_hierarchy, odwyer_visit_all)(benchmark::State& s)
+BENCHMARK_F(Calling_every_class_from_the_hierarchy, odwyer_visitor)(benchmark::State& s)
 {
     using AllDerived = std::tuple<Derived1, Derived2, Derived3, Derived4, Derived5, Derived6,
                                   Derived7, Derived8, Derived9, Derived10>;
@@ -284,7 +284,7 @@ BENCHMARK_F(Calling_every_class_from_the_hierarchy, odwyer_visit_all)(benchmark:
         }
     }
 }
-BENCHMARK_F(Calling_every_class_from_the_hierarchy, pikus_visit_all)(benchmark::State& s)
+BENCHMARK_F(Calling_every_class_from_the_hierarchy, pikus_visitor)(benchmark::State& s)
 {
     using namespace pikus_alternative_hierarchy;
 

@@ -17,7 +17,7 @@ def main() -> None:
         dump(test_results_clang, file)
     with open('/tmp/res_gcc', 'wb') as file:
         dump(test_results_gcc, file)
-
+    #
     # with open('/tmp/res_clang', 'rb') as file:
     #     test_results_clang = load(file)
     # with open('/tmp/res_gcc', 'rb') as file:
@@ -35,7 +35,7 @@ def benchmark_results(cc_compiler: str, cxx_compiler: str, suite_name: str) -> L
         f'-DCMAKE_CXX_COMPILER={cxx_compiler} -DCMAKE_EXPORT_COMPILE_COMMANDS=1 ../ && '
         'make vstor-benchmark'
         ')')
-    test_results_raw = execute('build/benchmark/vstor-benchmark --benchmark_repetitions=20')
+    test_results_raw = execute('build/benchmark/vstor-benchmark --benchmark_repetitions=200')
     test_results = [
         *filter(lambda line: '_median' in line and suite_name in line,
                 test_results_raw)]
@@ -50,8 +50,8 @@ def execute(command: str) -> List[str]:
 
 
 def show_graph(test_results_clang: List, test_results_gcc: List) -> None:
-    test_results_clang = [*reversed(test_results_clang)]
-    test_results_gcc = [*reversed(test_results_gcc)]
+    # test_results_clang = [*reversed(test_results_clang)]
+    # test_results_gcc = [*reversed(test_results_gcc)]
 
     test_names = [r[0].split('/')[1][0:-len('_median')] for r in test_results_clang]
     results_clang = [r[1] for r in test_results_clang]
@@ -69,12 +69,13 @@ def show_graph(test_results_clang: List, test_results_gcc: List) -> None:
             results_gcc_relative):
         fontsize = 10
         ax.text(y=index - 0.02 * fontsize, x=data_clang + 1,
-                s=f"{data_clang} ({int(data_clang_relative * 100)}%)",
+                s=f"{data_clang} ({int(data_clang_relative * 100)}% of clang)",
                 fontdict=dict(fontsize=fontsize))
         ax.text(y=index + 0.005 * fontsize, x=data_gcc + 1,
-                s=f"{data_gcc} ({int(data_gcc_relative * 100)}%)",
+                s=f"{data_gcc} ({int(data_gcc_relative * 100)}% of g++)",
                 fontdict=dict(fontsize=fontsize))
-    plt.subplots_adjust(left=0.4, right=0.86)
+    plt.subplots_adjust(left=0.24, right=0.76)
+    plt.title('Invocation cost  (LESS IS BETTER)')
     plt.savefig('benchmark/benchmark_chart.png')
     plt.show()
 
